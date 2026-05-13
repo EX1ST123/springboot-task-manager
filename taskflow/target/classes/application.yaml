@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: taskflow-api
+
+  # ── PostgreSQL ─────────────────────────────────────────
+  datasource:
+    url: jdbc:postgresql://localhost:5432/taskflow
+    username: postgres
+    password: postgres
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+    show-sql: true
+
+
+# ── JWT ────────────────────────────────────────────────────
+app:
+  jwt:
+    secret: taskflow-super-secret-key-at-least-256-bits-long-for-hs256-algorithm
+    expiration: 86400000   # 24 h in ms
+
+# ── OpenAPI ────────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+logging:
+  level:
+    com.taskflow: DEBUG
+    org.springframework.security: INFO
+
+# Add at the bottom
+gemini:
+  api:
+    key: AIzaSyAc_j3dYsJi-IYFZUUnmSqzCAk-j6Hy1BQ

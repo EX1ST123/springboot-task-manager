@@ -1,0 +1,4035 @@
+frontend\eslint.config.js:
+<code>
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{js,jsx}'],
+    extends: [
+      js.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+  },
+])
+
+</code>
+
+frontend\index.html:
+<code>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TaskFlow</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+</code>
+
+frontend\package.json:
+<code>
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.2.4",
+    "axios": "^1.16.0",
+    "lucide-react": "^1.14.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.15.0",
+    "tailwindcss": "^4.2.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.5.0",
+    "vite": "^8.0.10"
+  }
+}
+
+</code>
+
+frontend\README.md:
+<code>
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+</code>
+
+frontend\vite.config.js:
+<code>
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
+})
+
+</code>
+
+frontend\src\App.jsx:
+<code>
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import { FeatureProvider } from './context/FeatureContext'
+import ProtectedRoute from './components/ProtectedRoute'
+import Layout from './components/Layout'
+import { ChatWidget } from './components/Chat/ChatWidget'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import Profile from './pages/Profile'
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <FeatureProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Layout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                <Route path="/profile" element={<Profile />} />
+              </Route>
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <ChatWidget />
+        </BrowserRouter>
+      </FeatureProvider>
+    </AuthProvider>
+  )
+}
+
+</code>
+
+frontend\src\application.properties:
+<code>
+
+</code>
+
+frontend\src\index.css:
+<code>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --color-primary: #2D68C4;
+  --color-primary-dark: #2555A3;
+  --color-primary-light: #DAE5F7;
+  --color-sidebar: #0F2241;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+</code>
+
+frontend\src\main.jsx:
+<code>
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+</code>
+
+frontend\src\api\auth.js:
+<code>
+import client from './client'
+
+export async function login(credentials) {
+  const { data } = await client.post('/auth/login', credentials)
+  return data
+}
+
+export async function register(payload) {
+  const { data } = await client.post('/auth/register', payload)
+  return data
+}
+
+</code>
+
+frontend\src\api\client.js:
+<code>
+import axios from 'axios'
+
+const client = axios.create({ baseURL: '/api' })
+
+client.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
+export default client
+
+</code>
+
+frontend\src\api\tasks.js:
+<code>
+import client from './client'
+
+export async function getTasks(filters = {}) {
+  const params = {}
+  if (filters.status) params.status = filters.status
+  if (filters.category) params.category = filters.category
+  if (filters.priority) params.priority = filters.priority
+  const { data } = await client.get('/tasks', { params })
+  return data
+}
+
+export async function getTaskStats() {
+  const { data } = await client.get('/tasks/stats')
+  return data
+}
+
+export async function getTask(id) {
+  const { data } = await client.get(`/tasks/${id}`)
+  return data
+}
+
+export async function createTask(task) {
+  const { data } = await client.post('/tasks', task)
+  return data
+}
+
+export async function updateTask(id, task) {
+  const { data } = await client.put(`/tasks/${id}`, task)
+  return data
+}
+
+export async function deleteTask(id) {
+  await client.delete(`/tasks/${id}`)
+}
+
+export async function markComplete(id) {
+  const { data } = await client.patch(`/tasks/${id}/complete`)
+  return data
+}
+
+export async function markInProgress(id) {
+  const { data } = await client.patch(`/tasks/${id}/in-progress`)
+  return data
+}
+
+</code>
+
+frontend\src\api\users.js:
+<code>
+import client from './client'
+
+export async function getProfile() {
+  const { data } = await client.get('/users/me')
+  return data
+}
+
+export async function updateProfile(payload) {
+  const { data } = await client.put('/users/me', payload)
+  return data
+}
+
+</code>
+
+frontend\src\components\FilterBar.jsx:
+<code>
+import { SlidersHorizontal, X } from 'lucide-react'
+
+const statusOptions = [
+  { value: '', label: 'All Statuses' },
+  { value: 'TODO', label: 'To Do' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'DONE', label: 'Done' },
+]
+
+const categoryOptions = [
+  { value: '', label: 'All Categories' },
+  { value: 'STUDIES', label: 'Studies' },
+  { value: 'WORK', label: 'Work' },
+  { value: 'PERSONAL', label: 'Personal' },
+]
+
+const priorityOptions = [
+  { value: '', label: 'All Priorities' },
+  { value: 'LOW', label: 'Low' },
+  { value: 'MEDIUM', label: 'Medium' },
+  { value: 'HIGH', label: 'High' },
+]
+
+const selectCls =
+  'text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors cursor-pointer'
+
+export default function FilterBar({ filters, onChange }) {
+  const hasFilters = filters.status || filters.category || filters.priority
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1.5 text-slate-400 mr-1">
+        <SlidersHorizontal size={14} />
+        <span className="text-xs font-medium uppercase tracking-widest">Filter</span>
+      </div>
+
+      <select
+        value={filters.status}
+        onChange={(e) => onChange({ ...filters, status: e.target.value })}
+        className={selectCls}
+      >
+        {statusOptions.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={filters.category}
+        onChange={(e) => onChange({ ...filters, category: e.target.value })}
+        className={selectCls}
+      >
+        {categoryOptions.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={filters.priority}
+        onChange={(e) => onChange({ ...filters, priority: e.target.value })}
+        className={selectCls}
+      >
+        {priorityOptions.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+
+      {hasFilters && (
+        <button
+          onClick={() => onChange({ status: '', category: '', priority: '' })}
+          className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          <X size={13} />
+          Clear
+        </button>
+      )}
+    </div>
+  )
+}
+
+</code>
+
+frontend\src\components\Layout.jsx:
+<code>
+import { useState } from 'react'
+import { Outlet } from 'react-router-dom'
+import { Menu, CheckSquare } from 'lucide-react'
+import Sidebar from './Sidebar'
+
+export default function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-slate-50">
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile top bar */}
+        <header className="lg:hidden flex items-center h-14 px-4 bg-white border-b border-slate-200 shrink-0">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+            aria-label="Open menu"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="flex items-center gap-2 ml-3">
+            <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center">
+              <CheckSquare size={13} className="text-white" />
+            </div>
+            <span className="font-semibold text-slate-800">TaskFlow</span>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  )
+}
+
+</code>
+
+frontend\src\components\ProtectedRoute.jsx:
+<code>
+import { Navigate, Outlet } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+
+export default function ProtectedRoute() {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  return <Outlet />
+}
+
+</code>
+
+frontend\src\components\Sidebar.jsx:
+<code>
+import { NavLink, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, User, LogOut, CheckSquare } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+
+const navItems = [
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/profile', icon: User, label: 'Profile', end: false },
+]
+
+export default function Sidebar({ open, onClose }) {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  function handleLogout() {
+    logout()
+    navigate('/login')
+  }
+
+  return (
+    <aside
+      className={[
+        'fixed lg:static inset-y-0 left-0 z-30',
+        'w-60 flex flex-col shrink-0',
+        'transition-transform duration-200 ease-in-out',
+        open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+      ].join(' ')}
+      style={{ backgroundColor: '#0F2241' }}
+    >
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 h-16 px-5 border-b border-white/10">
+        <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
+          <CheckSquare size={15} className="text-white" />
+        </div>
+        <span className="font-semibold text-lg tracking-tight text-white">TaskFlow</span>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
+        <p className="px-3 mb-2 text-xs font-medium uppercase tracking-widest text-white/30">
+          Menu
+        </p>
+        {navItems.map(({ to, icon: Icon, label, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            onClick={onClose}
+            className={({ isActive }) =>
+              [
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-blue-600/25 text-white'
+                  : 'text-white/50 hover:bg-white/5 hover:text-white/80',
+              ].join(' ')
+            }
+          >
+            <Icon size={17} />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* User footer */}
+      <div className="p-3 border-t border-white/10">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5">
+          <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-semibold text-blue-300 shrink-0">
+            {user?.email?.[0]?.toUpperCase() ?? 'U'}
+          </div>
+          <p className="text-xs text-white/40 truncate">{user?.email}</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-white/40 hover:bg-white/5 hover:text-white/70 transition-colors"
+        >
+          <LogOut size={16} />
+          Sign out
+        </button>
+      </div>
+    </aside>
+  )
+}
+
+</code>
+
+frontend\src\components\StatsCard.jsx:
+<code>
+export default function StatsCard({ label, value, icon: Icon, color, bg }) {
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4">
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${bg}`}>
+        <Icon size={18} className={color} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-2xl font-bold text-slate-800 leading-none">{value}</p>
+        <p className="text-xs text-slate-400 uppercase tracking-widest font-medium mt-1 truncate">
+          {label}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+</code>
+
+frontend\src\components\TaskCard.jsx:
+<code>
+import { Pencil, Trash2, CheckCircle, Clock } from 'lucide-react'
+
+const priorityConfig = {
+  LOW: { label: 'Low', className: 'bg-slate-100 text-slate-600' },
+  MEDIUM: { label: 'Medium', className: 'bg-blue-50 text-blue-700' },
+  HIGH: { label: 'High', className: 'bg-red-50 text-red-700' },
+}
+
+const statusConfig = {
+  TODO: { label: 'To Do', className: 'bg-slate-100 text-slate-600' },
+  IN_PROGRESS: { label: 'In Progress', className: 'bg-amber-50 text-amber-700' },
+  DONE: { label: 'Done', className: 'bg-green-50 text-green-700' },
+}
+
+const categoryConfig = {
+  STUDIES: { label: 'Studies', className: 'bg-violet-50 text-violet-700' },
+  WORK: { label: 'Work', className: 'bg-blue-50 text-blue-700' },
+  PERSONAL: { label: 'Personal', className: 'bg-teal-50 text-teal-700' },
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+export default function TaskCard({ task, onEdit, onDelete, onComplete, onInProgress }) {
+  const priority = priorityConfig[task.priority] ?? priorityConfig.MEDIUM
+  const status = statusConfig[task.status] ?? statusConfig.TODO
+  const category = categoryConfig[task.category] ?? categoryConfig.WORK
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-slate-300 transition-all group flex flex-col">
+      {/* Title + Status */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h3 className="font-semibold text-slate-800 leading-snug line-clamp-2 flex-1">
+          {task.title}
+        </h3>
+        <span
+          className={`shrink-0 text-xs px-2 py-1 rounded-full font-medium ${status.className}`}
+        >
+          {status.label}
+        </span>
+      </div>
+
+      {/* Description */}
+      {task.description && (
+        <p className="text-sm text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+          {task.description}
+        </p>
+      )}
+
+      {/* Badges */}
+      <div className="flex flex-wrap gap-1.5 mt-auto mb-4">
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priority.className}`}>
+          {priority.label}
+        </span>
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${category.className}`}>
+          {task.categoryDisplayName || category.label}
+        </span>
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+        <span className="text-xs text-slate-400">{formatDate(task.createdAt)}</span>
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {task.status !== 'DONE' && (
+            <button
+              onClick={() => onComplete(task.id)}
+              title="Mark complete"
+              className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 transition-colors"
+            >
+              <CheckCircle size={15} />
+            </button>
+          )}
+          {task.status === 'TODO' && (
+            <button
+              onClick={() => onInProgress(task.id)}
+              title="Start task"
+              className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
+            >
+              <Clock size={15} />
+            </button>
+          )}
+          <button
+            onClick={() => onEdit(task)}
+            title="Edit task"
+            className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+          >
+            <Pencil size={15} />
+          </button>
+          <button
+            onClick={() => onDelete(task.id)}
+            title="Delete task"
+            className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+</code>
+
+frontend\src\components\TaskModal.jsx:
+<code>
+import { useState, useEffect } from 'react'
+import { X } from 'lucide-react'
+
+const PRIORITIES = [
+  { value: 'LOW', label: 'Low' },
+  { value: 'MEDIUM', label: 'Medium' },
+  { value: 'HIGH', label: 'High' },
+]
+
+const CATEGORIES = [
+  { value: 'STUDIES', label: 'Studies' },
+  { value: 'WORK', label: 'Work' },
+  { value: 'PERSONAL', label: 'Personal' },
+]
+
+const STATUSES = [
+  { value: 'TODO', label: 'To Do' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'DONE', label: 'Done' },
+]
+
+const EMPTY = {
+  title: '',
+  description: '',
+  priority: 'MEDIUM',
+  category: 'WORK',
+  status: 'TODO',
+}
+
+const inputCls = (hasError) =>
+  [
+    'w-full px-3 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors',
+    hasError
+      ? 'border-red-300 focus:ring-red-500/20'
+      : 'border-slate-200 focus:ring-blue-500/20 focus:border-blue-400',
+  ].join(' ')
+
+const labelCls = 'block text-xs font-medium uppercase tracking-widest text-slate-500 mb-1.5'
+
+export default function TaskModal({ task, onSave, onClose }) {
+  const isEdit = !!task
+  const [form, setForm] = useState(EMPTY)
+  const [errors, setErrors] = useState({})
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (task) {
+      setForm({
+        title: task.title ?? '',
+        description: task.description ?? '',
+        priority: task.priority ?? 'MEDIUM',
+        category: task.category ?? 'WORK',
+        status: task.status ?? 'TODO',
+      })
+    } else {
+      setForm(EMPTY)
+    }
+    setErrors({})
+  }, [task])
+
+  function set(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }))
+  }
+
+  function validate() {
+    const e = {}
+    if (!form.title.trim()) e.title = 'Title is required'
+    if (!form.priority) e.priority = 'Priority is required'
+    if (!form.category) e.category = 'Category is required'
+    return e
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const errs = validate()
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      return
+    }
+    setSaving(true)
+    try {
+      await onSave(form)
+      onClose()
+    } catch (err) {
+      console.error('Save failed', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+    >
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h2 className="font-semibold text-slate-800">{isEdit ? 'Edit Task' : 'New Task'}</h2>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Title */}
+          <div>
+            <label className={labelCls}>
+              Title <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => set('title', e.target.value)}
+              placeholder="Task title"
+              className={inputCls(errors.title)}
+            />
+            {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title}</p>}
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className={labelCls}>Description</label>
+            <textarea
+              value={form.description}
+              onChange={(e) => set('description', e.target.value)}
+              placeholder="Add a description..."
+              rows={3}
+              className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none transition-colors"
+            />
+          </div>
+
+          {/* Priority + Category */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>
+                Priority <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={form.priority}
+                onChange={(e) => set('priority', e.target.value)}
+                className={inputCls(errors.priority)}
+              >
+                {PRIORITIES.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+              {errors.priority && <p className="mt-1 text-xs text-red-500">{errors.priority}</p>}
+            </div>
+            <div>
+              <label className={labelCls}>
+                Category <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={form.category}
+                onChange={(e) => set('category', e.target.value)}
+                className={inputCls(errors.category)}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category}</p>}
+            </div>
+          </div>
+
+          {/* Status — edit mode only */}
+          {isEdit && (
+            <div>
+              <label className={labelCls}>Status</label>
+              <select
+                value={form.status}
+                onChange={(e) => set('status', e.target.value)}
+                className={inputCls(false)}
+              >
+                {STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg transition-colors"
+            >
+              {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Task'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+</code>
+
+frontend\src\components\AI\AITipCard.jsx:
+<code>
+import { useState, useEffect, useCallback } from 'react'
+import { Sparkles, RefreshCw, X } from 'lucide-react'
+import { useFeatures } from '../../context/FeatureContext'
+
+function LoadingDots({ color = 'bg-blue-400', size = 'w-1.5 h-1.5' }) {
+  return (
+    <div className="flex gap-1">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className={`${size} rounded-full ${color} animate-bounce`}
+          style={{ animationDelay: `${i * 0.15}s` }}
+        />
+      ))}
+    </div>
+  )
+}
+
+export function AITipCard({ stats, tasks, onDismiss }) {
+  const { aiEnabled } = useFeatures()
+  const [tip, setTip] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+  const [error, setError] = useState(false)
+
+  const fetchTip = useCallback(async () => {
+    setLoading(true)
+    setError(false)
+    setTip('')
+
+    try {
+      const response = await fetch('/api/ai/tip', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ 
+          stats: stats ? {
+            total: stats.total,
+            todo: stats.todo,
+            inProgress: stats.inProgress,
+            done: stats.done,
+            completionRate: stats.completionRate
+          } : null,
+          tasks: tasks?.slice(0, 5).map(t => ({ 
+            title: t.title, 
+            priority: t.priority, 
+            status: t.status 
+          }))
+        }),
+      })
+      
+      if (!response.ok) throw new Error(`API error: ${response.status}`)
+      const data = await response.json()
+      setTip(data.tip)
+    } catch (err) {
+      console.error('Failed to fetch tip:', err)
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [stats, tasks])
+
+  useEffect(() => {
+    if (aiEnabled && !dismissed) {
+      fetchTip()
+    }
+  }, [aiEnabled, fetchTip, dismissed])
+
+  const handleDismiss = () => {
+    setDismissed(true)
+    onDismiss?.()
+  }
+
+  const handleRefresh = () => {
+    fetchTip()
+  }
+
+  if (!aiEnabled || dismissed) return null
+
+  return (
+    <div className="relative flex items-start gap-3 bg-gradient-to-r from-blue-50 to-violet-50 border border-blue-100 rounded-xl px-4 py-3.5 shadow-sm">
+      <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+        <Sparkles size={14} className="text-white" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-1">
+          AI Productivity Tip
+        </p>
+
+        {loading && (
+          <div className="flex items-center gap-2">
+            <LoadingDots />
+            <span className="text-xs text-slate-400">Generating tip…</span>
+          </div>
+        )}
+
+        {!loading && error && (
+          <p className="text-sm text-slate-500">
+            Couldn't load a tip right now.{' '}
+            <button
+              onClick={handleRefresh}
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Try again
+            </button>
+          </p>
+        )}
+
+        {!loading && !error && tip && (
+          <p className="text-sm text-slate-700 leading-relaxed">{tip}</p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        {!loading && (
+          <button
+            onClick={handleRefresh}
+            title="New tip"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+          >
+            <RefreshCw size={13} />
+          </button>
+        )}
+        <button
+          onClick={handleDismiss}
+          title="Dismiss"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+        >
+          <X size={13} />
+        </button>
+      </div>
+    </div>
+  )
+}
+</code>
+
+frontend\src\components\Chat\ChatWidget.jsx:
+<code>
+import { useState, useRef, useEffect } from 'react'
+import { MessageCircle, X, Send, Sparkles, Loader2, ChevronDown } from 'lucide-react'
+import { useFeatures } from '../../context/FeatureContext'
+
+const SYSTEM_PROMPT = `You are a helpful productivity assistant embedded in TaskFlow, a task management app.
+You help users manage their tasks better, prioritize work, overcome procrastination, and stay productive.
+Keep answers concise and practical (2–4 sentences unless a longer answer is clearly needed).
+You may ask clarifying questions. Be warm but efficient.`
+
+function TypingIndicator() {
+  return (
+    <div className="flex items-end gap-2">
+      <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+        <Sparkles size={12} className="text-white" />
+      </div>
+      <div className="bg-white border border-slate-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+        <div className="flex gap-1 items-center h-4">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Message({ msg }) {
+  const isUser = msg.role === 'user'
+  return (
+    <div className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
+      {!isUser && (
+        <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+          <Sparkles size={12} className="text-white" />
+        </div>
+      )}
+      <div
+        className={[
+          'max-w-[78%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm',
+          isUser
+            ? 'bg-blue-600 text-white rounded-br-sm'
+            : 'bg-white border border-slate-100 text-slate-700 rounded-bl-sm',
+        ].join(' ')}
+      >
+        {msg.content}
+      </div>
+    </div>
+  )
+}
+
+export function ChatWidget() {
+  const { aiEnabled } = useFeatures()
+  const [open, setOpen] = useState(false)
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      content: "Hi! I'm your TaskFlow assistant. Ask me anything about your tasks, productivity, or how to make the most of your day. 🚀",
+    },
+  ])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const bottomRef = useRef(null)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 100)
+    }
+  }, [open])
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, loading])
+
+  // Don't render anything if AI is disabled
+  if (!aiEnabled) return null
+
+  async function sendMessage() {
+    const text = input.trim()
+    if (!text || loading) return
+
+    const userMsg = { role: 'user', content: text }
+    const history = [...messages, userMsg]
+    setMessages(history)
+    setInput('')
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ 
+          message: text,
+          history: history.slice(-10).map(m => ({ role: m.role, content: m.content }))
+        }),
+      })
+
+      if (!response.ok) throw new Error('API error')
+      const data = await response.json()
+      const reply = data.response
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
+  return (
+    <>
+      {/* Chat panel */}
+      {open && (
+        <div
+          className="fixed bottom-24 right-6 z-50 w-[360px] max-h-[540px] flex flex-col rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+          style={{ backgroundColor: '#f8fafc' }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3.5 bg-white border-b border-slate-100 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center">
+                <Sparkles size={14} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">TaskFlow AI</p>
+                <p className="text-xs text-green-500 font-medium">Online</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setOpen(false)}
+              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
+            >
+              <ChevronDown size={18} />
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
+            {messages.map((msg, i) => (
+              <Message key={i} msg={msg} />
+            ))}
+            {loading && <TypingIndicator />}
+            {error && (
+              <p className="text-xs text-red-500 text-center py-1">{error}</p>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input */}
+          <div className="shrink-0 px-4 py-3 bg-white border-t border-slate-100">
+            <div className="flex items-end gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/15 transition-all">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask me anything..."
+                rows={1}
+                className="flex-1 bg-transparent text-sm text-slate-700 placeholder-slate-400 resize-none focus:outline-none leading-5 max-h-24 overflow-y-auto"
+                style={{ minHeight: '20px' }}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!input.trim() || loading}
+                className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white disabled:opacity-40 hover:bg-blue-700 transition-colors shrink-0"
+              >
+                {loading ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Send size={13} />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FAB - only shown when AI is enabled */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className={[
+            'relative h-14 w-14 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center',
+            open
+              ? 'bg-slate-700 hover:bg-slate-800'
+              : 'bg-blue-600 hover:bg-blue-700 hover:scale-105',
+          ].join(' ')}
+          aria-label="Toggle chat"
+        >
+          {open ? (
+            <X size={22} className="text-white" />
+          ) : (
+            <>
+              <MessageCircle size={22} className="text-white" />
+              <span className="absolute inset-0 rounded-full bg-blue-500 opacity-30 animate-ping" />
+            </>
+          )}
+        </button>
+      </div>
+    </>
+  )
+}
+</code>
+
+frontend\src\components\Profile\FeatureSettings.jsx:
+<code>
+import React from 'react';
+import { useFeatures } from '../../context/FeatureContext';
+
+export const FeatureSettings = () => {
+  const { aiEnabled, toggleAI } = useFeatures();
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">AI Features</h3>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium text-gray-700">Enable AI Assistant</p>
+            <p className="text-sm text-gray-500">Includes productivity tips and the AI chat widget.</p>
+          </div>
+          <button
+            onClick={toggleAI}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${aiEnabled ? 'bg-indigo-600' : 'bg-gray-200'}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${aiEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+</code>
+
+frontend\src\context\AuthContext.jsx:
+<code>
+import { createContext, useContext, useState, useCallback } from 'react'
+import * as authApi from '../api/auth'
+
+const AuthContext = createContext(null)
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user')
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
+  })
+
+  const login = useCallback(async (credentials) => {
+    const data = await authApi.login(credentials)
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('user', JSON.stringify(data))
+    setUser(data)
+    return data
+  }, [])
+
+  const register = useCallback(async (payload) => {
+    const data = await authApi.register(payload)
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('user', JSON.stringify(data))
+    setUser(data)
+    return data
+  }, [])
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUser(null)
+  }, [])
+
+  const updateUser = useCallback(
+    (updated) => {
+      const merged = { ...user, ...updated }
+      localStorage.setItem('user', JSON.stringify(merged))
+      setUser(merged)
+    },
+    [user]
+  )
+
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
+}
+
+</code>
+
+frontend\src\context\FeatureContext.jsx:
+<code>
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const FeatureContext = createContext(null);
+
+export const FeatureProvider = ({ children }) => {
+  const [aiEnabled, setAiEnabled] = useState(() => {
+    const saved = localStorage.getItem('ai_enabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ai_enabled', JSON.stringify(aiEnabled));
+  }, [aiEnabled]);
+
+  const toggleAI = () => setAiEnabled(prev => !prev);
+
+  return (
+    <FeatureContext.Provider value={{ aiEnabled, toggleAI }}>
+      {children}
+    </FeatureContext.Provider>
+  );
+};
+
+export const useFeatures = () => {
+  const context = useContext(FeatureContext);
+  if (context === null) {
+    throw new Error('useFeatures must be used within a FeatureProvider');
+  }
+  return context;
+};
+</code>
+
+frontend\src\pages\Dashboard.jsx:
+<code>
+import { useState, useEffect, useCallback } from 'react'
+import { Plus, ListTodo, Clock, CheckCircle, BarChart2, AlertCircle, Activity } from 'lucide-react'
+import { AITipCard } from '../components/AI/AITipCard'
+import * as tasksApi from '../api/tasks'
+import TaskCard from '../components/TaskCard'
+import TaskModal from '../components/TaskModal'
+import StatsCard from '../components/StatsCard'
+import FilterBar from '../components/FilterBar'
+
+const EMPTY_FILTERS = { status: '', category: '', priority: '' }
+
+export default function Dashboard() {
+  const [tasks, setTasks] = useState([])
+  const [stats, setStats] = useState(null)
+  const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState(null)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [tasksData, statsData] = await Promise.all([
+        tasksApi.getTasks(filters),
+        tasksApi.getTaskStats(),
+      ])
+      setTasks(tasksData)
+      setStats(statsData)
+    } catch {
+      setError('Failed to load tasks. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }, [filters])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  async function handleSave(form) {
+    if (editingTask) {
+      await tasksApi.updateTask(editingTask.id, form)
+    } else {
+      await tasksApi.createTask(form)
+    }
+    await fetchData()
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('Delete this task?')) return
+    try {
+      await tasksApi.deleteTask(id)
+      await fetchData()
+    } catch {
+      setError('Failed to delete task.')
+    }
+  }
+
+  async function handleComplete(id) {
+    try {
+      await tasksApi.markComplete(id)
+      await fetchData()
+    } catch {
+      setError('Failed to update task.')
+    }
+  }
+
+  async function handleInProgress(id) {
+    try {
+      await tasksApi.markInProgress(id)
+      await fetchData()
+    } catch {
+      setError('Failed to update task.')
+    }
+  }
+
+  function openCreate() {
+    setEditingTask(null)
+    setModalOpen(true)
+  }
+
+  function openEdit(task) {
+    setEditingTask(task)
+    setModalOpen(true)
+  }
+
+  function closeModal() {
+    setModalOpen(false)
+    setEditingTask(null)
+  }
+
+  const statsCards = stats
+    ? [
+        {
+          label: 'Total',
+          value: stats.total,
+          icon: BarChart2,
+          color: 'text-blue-600',
+          bg: 'bg-blue-50',
+        },
+        {
+          label: 'To Do',
+          value: stats.todo,
+          icon: ListTodo,
+          color: 'text-slate-500',
+          bg: 'bg-slate-100',
+        },
+        {
+          label: 'In Progress',
+          value: stats.inProgress,
+          icon: Clock,
+          color: 'text-amber-600',
+          bg: 'bg-amber-50',
+        },
+        {
+          label: 'Done',
+          value: stats.done,
+          icon: CheckCircle,
+          color: 'text-green-600',
+          bg: 'bg-green-50',
+        },
+        {
+          label: 'Completion',
+          value: `${Math.round(stats.completionRate ?? 0)}%`,
+          icon: Activity,
+          color: 'text-violet-600',
+          bg: 'bg-violet-50',
+        },
+      ]
+    : []
+
+  return (
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">My Tasks</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Manage and track your work</p>
+        </div>
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+        >
+          <Plus size={16} />
+          New Task
+        </button>
+      </div>
+      <div className="mb-6">
+          <AITipCard stats={stats} tasks={tasks} />
+      </div>
+      {/* Stats */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+          {statsCards.map((card) => (
+            <StatsCard key={card.label} {...card} />
+          ))}
+        </div>
+      )}
+
+      {/* Filter bar */}
+      <div className="mb-6">
+        <FilterBar filters={filters} onChange={setFilters} />
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-2 mb-5 px-4 py-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
+          <AlertCircle size={15} className="shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {/* Task grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-44 bg-white rounded-xl border border-slate-200 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : tasks.length === 0 ? (
+        <div className="text-center py-24">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <ListTodo size={26} className="text-slate-400" />
+          </div>
+          <p className="font-medium text-slate-600">No tasks found</p>
+          <p className="text-sm text-slate-400 mt-1">Create your first task to get started</p>
+          <button
+            onClick={openCreate}
+            className="mt-5 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+          >
+            <Plus size={15} />
+            Create Task
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+              onComplete={handleComplete}
+              onInProgress={handleInProgress}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Modal */}
+      {modalOpen && <TaskModal task={editingTask} onSave={handleSave} onClose={closeModal} />}
+    </div>
+  )
+}
+
+</code>
+
+frontend\src\pages\Login.jsx:
+<code>
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { CheckSquare, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+
+export default function Login() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  const [form, setForm] = useState({ email: '', password: '' })
+  const [showPass, setShowPass] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  function set(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    setError('')
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.email || !form.password) {
+      setError('Please fill in all fields')
+      return
+    }
+    setLoading(true)
+    try {
+      await login(form)
+      navigate('/')
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid email or password')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-md">
+            <CheckSquare size={21} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">Welcome back</h1>
+          <p className="text-sm text-slate-500 mt-1">Sign in to your TaskFlow account</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          {error && (
+            <div className="mb-5 px-4 py-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-medium uppercase tracking-widest text-slate-500 mb-1.5">
+                Email
+              </label>
+              <div className="relative">
+                <Mail
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => set('email', e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-medium uppercase tracking-widest text-slate-500 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={(e) => set('password', e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="w-full pl-9 pr-10 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showPass ? 'Hide password' : 'Show password'}
+                >
+                  {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg transition-colors mt-1"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-slate-500 mt-5">
+          Don&apos;t have an account?{' '}
+          <Link to="/register" className="text-blue-600 font-medium hover:underline">
+            Create one
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+</code>
+
+frontend\src\pages\Profile.jsx:
+<code>
+import { useState, useEffect } from 'react'
+import { Save, User, Target, Zap, Sparkles, CheckCircle, AlertCircle } from 'lucide-react'
+import * as usersApi from '../api/users'
+import { useAuth } from '../context/AuthContext'
+import { useFeatures } from '../context/FeatureContext'
+
+export default function Profile() {
+  const { updateUser } = useAuth()
+  const { aiEnabled, toggleAI } = useFeatures() // Use unified context
+  const [profile, setProfile] = useState(null)
+  const [form, setForm] = useState({ mainGoal: '', workRhythm: '' })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    usersApi
+      .getProfile()
+      .then((data) => {
+        setProfile(data)
+        setForm({
+          mainGoal: data.mainGoal ?? '',
+          workRhythm: data.workRhythm ?? '',
+        })
+      })
+      .catch(() => setError('Failed to load profile'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  function set(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    setSuccess(false)
+    setError('')
+  }
+
+  async function handleSave(e) {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    setSuccess(false)
+    try {
+      const updated = await usersApi.updateProfile(form)
+      setProfile(updated)
+      updateUser(updated)
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3500)
+    } catch {
+      setError('Failed to save profile. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Handle AI toggle
+  async function handleAIToggle() {
+    toggleAI()
+    // Optionally sync with backend
+    try {
+      await usersApi.updateProfile({ iaEnabled: !aiEnabled })
+    } catch (err) {
+      console.error('Failed to sync AI preference with server')
+    }
+  }
+
+  const inputCls =
+    'w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors'
+
+  const labelCls = 'block text-xs font-medium uppercase tracking-widest text-slate-500 mb-1.5'
+
+  if (loading) {
+    return (
+      <div className="p-6 lg:p-8 max-w-2xl mx-auto">
+        <div className="h-7 w-48 bg-slate-200 rounded animate-pulse mb-8" />
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 lg:p-8 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">Profile Settings</h1>
+        <p className="text-sm text-slate-500 mt-0.5">Manage your account preferences</p>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-4">
+        {/* Account card */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 className="text-xs font-medium uppercase tracking-widest text-slate-400 mb-4">
+            Account
+          </h2>
+          <div>
+            <label className={labelCls}>Email</label>
+            <div className="relative">
+              <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="email"
+                value={profile?.email ?? ''}
+                readOnly
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-400 cursor-not-allowed"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Preferences card */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 className="text-xs font-medium uppercase tracking-widest text-slate-400 mb-4">
+            Preferences
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label className={labelCls}>Main Goal</label>
+              <div className="relative">
+                <Target
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="text"
+                  value={form.mainGoal}
+                  onChange={(e) => set('mainGoal', e.target.value)}
+                  placeholder="e.g. Complete my thesis"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Work Rhythm</label>
+              <div className="relative">
+                <Zap
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="text"
+                  value={form.workRhythm}
+                  onChange={(e) => set('workRhythm', e.target.value)}
+                  placeholder="e.g. Morning person, 2h deep work blocks"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Assistance card */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
+                <Sparkles size={16} className="text-violet-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-700">AI Assistance</p>
+                <p className="text-xs text-slate-400 mt-0.5">Enable smart suggestions and insights</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={aiEnabled}
+              onClick={handleAIToggle}
+              className={[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30',
+                aiEnabled ? 'bg-blue-600' : 'bg-slate-200',
+              ].join(' ')}
+            >
+              <span
+                className={[
+                  'inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200',
+                  aiEnabled ? 'translate-x-6' : 'translate-x-1',
+                ].join(' ')}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Feedback */}
+        {error && (
+          <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
+            <AlertCircle size={15} className="shrink-0" />
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-100 rounded-lg text-sm text-green-600">
+            <CheckCircle size={15} className="shrink-0" />
+            Profile saved successfully
+          </div>
+        )}
+
+        {/* Save */}
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Save size={15} />
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+</code>
+
+frontend\src\pages\Register.jsx:
+<code>
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { CheckSquare, Mail, Lock, Eye, EyeOff, Target, Zap } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+
+export default function Register() {
+  const { register } = useAuth()
+  const navigate = useNavigate()
+  const [form, setForm] = useState({ email: '', password: '', mainGoal: '', workRhythm: '' })
+  const [showPass, setShowPass] = useState(false)
+  const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
+
+  function set(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }))
+    if (errors.general) setErrors((prev) => ({ ...prev, general: '' }))
+  }
+
+  function validate() {
+    const e = {}
+    if (!form.email) e.email = 'Email is required'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email format'
+    if (!form.password) e.password = 'Password is required'
+    else if (form.password.length < 6) e.password = 'Password must be at least 6 characters'
+    return e
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const errs = validate()
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      return
+    }
+    setLoading(true)
+    try {
+      await register(form)
+      navigate('/')
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Registration failed. Please try again.'
+      setErrors({ general: msg })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fieldCls = (errKey) =>
+    [
+      'w-full py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors',
+      errors[errKey]
+        ? 'border-red-300 focus:ring-red-500/20'
+        : 'border-slate-200 focus:ring-blue-500/20 focus:border-blue-400',
+    ].join(' ')
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-md">
+            <CheckSquare size={21} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">Create account</h1>
+          <p className="text-sm text-slate-500 mt-1">Start organizing with TaskFlow</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          {errors.general && (
+            <div className="mb-5 px-4 py-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
+              {errors.general}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-medium uppercase tracking-widest text-slate-500 mb-1.5">
+                Email <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <Mail
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => set('email', e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className={`${fieldCls('email')} pl-9 pr-3`}
+                />
+              </div>
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-medium uppercase tracking-widest text-slate-500 mb-1.5">
+                Password <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <Lock
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={(e) => set('password', e.target.value)}
+                  placeholder="Min. 6 characters"
+                  autoComplete="new-password"
+                  className={`${fieldCls('password')} pl-9 pr-10`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showPass ? 'Hide password' : 'Show password'}
+                >
+                  {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
+            </div>
+
+            {/* Main Goal */}
+            <div>
+              <label className="block text-xs font-medium uppercase tracking-widest text-slate-500 mb-1.5">
+                Main Goal{' '}
+                <span className="normal-case text-slate-400 font-normal tracking-normal">
+                  (optional)
+                </span>
+              </label>
+              <div className="relative">
+                <Target
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="text"
+                  value={form.mainGoal}
+                  onChange={(e) => set('mainGoal', e.target.value)}
+                  placeholder="e.g. Complete my thesis"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Work Rhythm */}
+            <div>
+              <label className="block text-xs font-medium uppercase tracking-widest text-slate-500 mb-1.5">
+                Work Rhythm{' '}
+                <span className="normal-case text-slate-400 font-normal tracking-normal">
+                  (optional)
+                </span>
+              </label>
+              <div className="relative">
+                <Zap
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="text"
+                  value={form.workRhythm}
+                  onChange={(e) => set('workRhythm', e.target.value)}
+                  placeholder="e.g. Morning person, 2h deep work"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg transition-colors mt-1"
+            >
+              {loading ? 'Creating account...' : 'Create Account'}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-slate-500 mt-5">
+          Already have an account?{' '}
+          <Link to="/login" className="text-blue-600 font-medium hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+</code>
+
+taskflow\pom.xml:
+<code>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.5</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.taskflow</groupId>
+    <artifactId>taskflow-api</artifactId>
+    <version>1.0.0</version>
+    <name>TaskFlow API</name>
+    <description>REST API for TaskFlow – AI-powered Task Manager</description>
+
+    <properties>
+        <java.version>17</java.version>
+        <jjwt.version>0.12.5</jjwt.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot Core -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- JWT -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Database -->
+        <!-- Removed H2 dependency as we are using PostgreSQL -->
+        <!-- <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency> -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <!-- Google Gemini API -->
+       <dependency>
+            <groupId>com.google.genai</groupId>
+            <artifactId>google-genai</artifactId>
+            <version>1.16.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- OpenAPI / Swagger -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>1.19.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>1.19.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>1.19.3</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+</code>
+
+taskflow\src\main\java\com\taskflow\TaskflowApplication.java:
+<code>
+package com.taskflow;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class TaskflowApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(TaskflowApplication.class, args);
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\config\OpenApiConfig.java:
+<code>
+package com.taskflow.config;
+
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@OpenAPIDefinition(
+    info = @Info(
+        title = "TaskFlow API",
+        version = "1.0.0",
+        description = "REST API for TaskFlow – AI-powered Task Manager"
+    )
+)
+@SecurityScheme(
+    name = "bearerAuth",
+    type = SecuritySchemeType.HTTP,
+    scheme = "bearer",
+    bearerFormat = "JWT",
+    in = SecuritySchemeIn.HEADER
+)
+public class OpenApiConfig {
+}
+
+</code>
+
+taskflow\src\main\java\com\taskflow\config\SecurityConfig.java:
+<code>
+package com.taskflow.config;
+
+import com.taskflow.security.JwtAuthFilter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final JwtAuthFilter jwtAuthFilter;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                // Public endpoints
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/h2-console/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/api-docs/**",
+                    "/v3/api-docs/**"
+                ).permitAll()
+                // Everything else requires JWT
+                .anyRequest().authenticated()
+            )
+            // H2 console (dev only)
+            .headers(headers -> headers.frameOptions(fo -> fo.sameOrigin()))
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\controller\AIController.java:
+<code>
+package com.taskflow.controller;
+
+import com.taskflow.dto.AIRequest;
+import com.taskflow.service.AIService;
+import com.taskflow.service.TaskService;
+import com.taskflow.dto.AITipContext;
+import com.taskflow.dto.TaskResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/ai")
+@RequiredArgsConstructor
+@Tag(name = "AI Assistant", description = "Gemini-powered AI chat and tips")
+public class AIController {
+
+    private final AIService aiService;
+    private final TaskService taskService;  // Add this
+
+    @PostMapping("/chat")
+    @Operation(summary = "Send a chat message to Gemini AI")
+    public ResponseEntity<Map<String, String>> chat(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody AIRequest request) {
+        
+        // Fetch user's tasks to provide context
+        List<TaskResponse> userTasks = taskService.getAllTasksForUser(userId);
+        
+        // Pass tasks to the AI service
+        String response = aiService.chatWithContext(
+            request.getMessage(), 
+            request.getHistory(),
+            userTasks,
+            userId
+        );
+        return ResponseEntity.ok(Map.of("response", response));
+    }
+
+    @PostMapping("/tip")
+    @Operation(summary = "Generate a productivity tip")
+    public ResponseEntity<Map<String, String>> generateTip(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody(required = false) AITipContext context) {
+        String tip = aiService.generateProductivityTip(context);
+        return ResponseEntity.ok(Map.of("tip", tip));
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\controller\AuthController.java:
+<code>
+package com.taskflow.controller;
+
+import com.taskflow.dto.AuthDto;
+import com.taskflow.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Register and login endpoints")
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping("/register")
+    @Operation(summary = "Register a new user")
+    public ResponseEntity<AuthDto.AuthResponse> register(
+            @Valid @RequestBody AuthDto.RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "Login and receive JWT token")
+    public ResponseEntity<AuthDto.AuthResponse> login(
+            @Valid @RequestBody AuthDto.LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\controller\HomeController.java:
+<code>
+package com.taskflow.controller;
+
+import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Controller
+public class HomeController {
+
+    @GetMapping("/")
+    @Operation(hidden = true)
+    public String redirectToSwagger() {
+        return "redirect:/swagger-ui.html";
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\controller\TaskController.java:
+<code>
+package com.taskflow.controller;
+
+import com.taskflow.dto.TaskFilterRequest;
+import com.taskflow.dto.TaskDto;
+import com.taskflow.dto.TaskRequest;
+import com.taskflow.dto.TaskResponse;
+import com.taskflow.service.TaskService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/tasks")
+@RequiredArgsConstructor
+@Tag(name = "Task Management", description = "Endpoints for managing user tasks")
+public class TaskController {
+
+    private final TaskService taskService;
+
+    @PostMapping
+    @Operation(summary = "Create a new task for the authenticated user")
+    public ResponseEntity<TaskResponse> createTask(@AuthenticationPrincipal Long userId,
+                                                   @Valid @RequestBody TaskRequest taskRequest) {
+        return new ResponseEntity<>(taskService.createTask(userId, taskRequest), HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    @Operation(summary = "Get all tasks for the authenticated user, with optional filters")
+    public ResponseEntity<List<TaskResponse>> getTasks(@AuthenticationPrincipal Long userId,
+                                                       @ModelAttribute TaskFilterRequest filterRequest) {
+        List<TaskResponse> tasks = taskService.getFilteredTasksForUser(userId, filterRequest);
+        return ResponseEntity.ok(tasks);
+    }
+
+    @GetMapping("/{taskId}")
+    @Operation(summary = "Get a specific task by ID for the authenticated user")
+    public ResponseEntity<TaskResponse> getTaskById(@AuthenticationPrincipal Long userId,
+                                                    @PathVariable Long taskId) {
+        return ResponseEntity.ok(taskService.getTaskByIdForUser(taskId, userId));
+    }
+
+    @PutMapping("/{taskId}")
+    @Operation(summary = "Update an existing task for the authenticated user")
+    public ResponseEntity<TaskResponse> updateTask(@AuthenticationPrincipal Long userId,
+                                                    @PathVariable Long taskId,
+                                                    @Valid @RequestBody TaskRequest taskRequest) {
+        return ResponseEntity.ok(taskService.updateTask(taskId, userId, taskRequest));
+    }
+
+    @PatchMapping("/{taskId}/complete")
+    @Operation(summary = "Mark a task as complete")
+    public ResponseEntity<TaskResponse> markComplete(@AuthenticationPrincipal Long userId,
+                                                    @PathVariable Long taskId) {
+        return ResponseEntity.ok(taskService.markTaskAsDone(taskId, userId));
+    }
+
+    @PatchMapping("/{taskId}/in-progress")
+    @Operation(summary = "Mark a task as in progress")
+    public ResponseEntity<TaskResponse> markInProgress(@AuthenticationPrincipal Long userId,
+                                                        @PathVariable Long taskId) {
+        return ResponseEntity.ok(taskService.markTaskAsInProgress(taskId, userId));
+    }
+
+    @DeleteMapping("/{taskId}")
+    @Operation(summary = "Delete a task for the authenticated user")
+    public ResponseEntity<Void> deleteTask(@AuthenticationPrincipal Long userId,
+                                           @PathVariable Long taskId) {
+        taskService.deleteTask(taskId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/stats")
+    @Operation(summary = "Get task statistics for the authenticated user")
+    public ResponseEntity<TaskDto.StatsResponse> getTaskStats(@AuthenticationPrincipal Long userId) {
+        TaskDto.StatsResponse stats = taskService.getTaskStatsForUser(userId);
+        return ResponseEntity.ok(stats);
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\controller\UserController.java:
+<code>
+package com.taskflow.controller;
+
+import com.taskflow.dto.UserDto;
+import com.taskflow.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+@Tag(name = "Users", description = "User profile management")
+@SecurityRequirement(name = "bearerAuth")
+public class UserController {
+
+    private final UserService userService;
+
+    @GetMapping("/me")
+    @Operation(summary = "Get current user profile")
+    public ResponseEntity<UserDto.ProfileResponse> getProfile(
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(userService.getProfile(userId));
+    }
+
+    @PutMapping("/me")
+    @Operation(summary = "Update current user profile")
+    public ResponseEntity<UserDto.ProfileResponse> updateProfile(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody UserDto.UpdateProfileRequest request) {
+        return ResponseEntity.ok(userService.updateProfile(userId, request));
+    }
+}
+
+</code>
+
+taskflow\src\main\java\com\taskflow\dto\AIRequest.java:
+<code>
+package com.taskflow.dto;
+
+import lombok.Data;
+import java.util.List;
+import java.util.Map;
+
+@Data
+public class AIRequest {
+    private String message;
+    private List<Map<String, String>> history;
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\dto\AITipContext.java:
+<code>
+package com.taskflow.dto;
+
+import lombok.Data;
+import com.taskflow.dto.TaskDto.StatsResponse;
+import java.util.List;
+import java.util.Map;
+
+@Data
+public class AITipContext {
+    private StatsResponse stats;
+    private List<Map<String, String>> tasks;
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\dto\AuthDto.java:
+<code>
+package com.taskflow.dto;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+// ── Request DTOs ──────────────────────────────────────────
+
+public class AuthDto {
+
+    @Data
+    public static class RegisterRequest {
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        private String email;
+
+        @NotBlank(message = "Password is required")
+        @Size(min = 6, message = "Password must be at least 6 characters")
+        private String password;
+
+        private String mainGoal;
+        private String workRhythm;
+    }
+
+    @Data
+    public static class LoginRequest {
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        private String email;
+
+        @NotBlank(message = "Password is required")
+        private String password;
+    }
+
+    @Data
+    public static class AuthResponse {
+        private String token;
+        private String type = "Bearer";
+        private Long userId;
+        private String email;
+        private String mainGoal;
+        private String workRhythm;
+        private boolean iaEnabled;
+
+        public AuthResponse(String token, Long userId, String email,
+                            String mainGoal, String workRhythm, boolean iaEnabled) {
+            this.token = token;
+            this.userId = userId;
+            this.email = email;
+            this.mainGoal = mainGoal;
+            this.workRhythm = workRhythm;
+            this.iaEnabled = iaEnabled;
+        }
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\dto\TaskDto.java:
+<code>
+package com.taskflow.dto;
+
+import com.taskflow.enums.Category;
+import com.taskflow.enums.Priority;
+import com.taskflow.enums.Status;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import lombok.AllArgsConstructor;
+
+import java.time.LocalDateTime;
+
+public class TaskDto {
+
+    @Data
+    public static class CreateRequest {
+        @NotBlank(message = "Title is required")
+        private String title;
+
+        private String description;
+
+        @NotNull(message = "Priority is required")
+        private Priority priority;
+
+        @NotNull(message = "Category is required")
+        private Category category;
+
+        private Status status = Status.TODO;
+    }
+
+    @Data
+    public static class UpdateRequest {
+        private String title;
+        private String description;
+        private Priority priority;
+        private Category category;
+        private Status status;
+    }
+
+    @Data
+    public static class Response {
+        private Long id;
+        private String title;
+        private String description;
+        private Priority priority;
+        private Status status;
+        private Category category;
+        private String categoryDisplayName;
+        private Long userId;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class StatsResponse {
+        private long total;
+        private long todo;
+        private long inProgress;
+        private long done;
+        private double completionRate;
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\dto\TaskFilterRequest.java:
+<code>
+package com.taskflow.dto;
+
+import com.taskflow.enums.Category;
+import com.taskflow.enums.Priority;
+import com.taskflow.enums.Status;
+import lombok.Data;
+
+@Data
+public class TaskFilterRequest {
+    private Status status;
+    private Category category;
+    private Priority priority;
+    // Add other filterable fields as needed
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\dto\TaskRequest.java:
+<code>
+package com.taskflow.dto;
+
+import com.taskflow.enums.Category;
+import com.taskflow.enums.Priority;
+import com.taskflow.enums.Status;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+@Data
+public class TaskRequest {
+
+    @NotBlank(message = "Title cannot be empty")
+    private String title;
+
+    private String description;
+
+    @NotNull(message = "Priority cannot be null")
+    private Priority priority;
+
+    private Status status = Status.TODO; // Default status
+
+    private Category category;
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\dto\TaskResponse.java:
+<code>
+package com.taskflow.dto;
+
+import com.taskflow.enums.Category;
+import com.taskflow.enums.Priority;
+import com.taskflow.enums.Status;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+public class TaskResponse {
+    private Long id;
+    private String title;
+    private String description;
+    private Priority priority;
+    private Status status;
+    private Category category;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private Long userId; // To indicate which user owns this task
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\dto\UserDto.java:
+<code>
+package com.taskflow.dto;
+
+import lombok.Data;
+
+public class UserDto {
+
+    @Data
+    public static class UpdateProfileRequest {
+        private String mainGoal;
+        private String workRhythm;
+        private Boolean iaEnabled;
+    }
+
+    @Data
+    public static class ProfileResponse {
+        private Long id;
+        private String email;
+        private String mainGoal;
+        private String workRhythm;
+        private boolean iaEnabled;
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\entity\Task.java:
+<code>
+package com.taskflow.entity;
+
+import com.taskflow.enums.Category;
+import com.taskflow.enums.Priority;
+import com.taskflow.enums.Status;
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "tasks")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Task {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    private Priority priority;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
+    @Enumerated(EnumType.STRING)
+    private Category category;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    public void markAsCompleted() {
+        this.status = Status.DONE;
+    }
+
+    public void markAsInProgress() {
+        this.status = Status.IN_PROGRESS;
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\entity\User.java:
+<code>
+package com.taskflow.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "users")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(name = "main_goal")
+    private String mainGoal;
+
+    @Column(name = "work_rhythm")
+    private String workRhythm;
+
+    // Keep @Builder.Default for iaEnabled
+    @Builder.Default
+    @Column(name = "ai_enabled")
+    private boolean iaEnabled = true;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Task> tasks = new ArrayList<>();
+
+    @Builder.Default
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\enums\Category.java:
+<code>
+package com.taskflow.enums;
+
+import lombok.Getter;
+
+@Getter
+public enum Category {
+    WORK("Work"),
+    PERSONAL("Personal"),
+    URGENT("Urgent"),
+    OTHER("Other"),
+    STUDIES("Studies");
+
+    private final String displayName;
+
+    Category(String displayName) {
+        this.displayName = displayName;
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\enums\Priority.java:
+<code>
+package com.taskflow.enums;
+
+import lombok.Getter;
+
+@Getter
+public enum Priority {
+    LOW("Low"),
+    MEDIUM("Medium"),
+    HIGH("High");
+
+    private final String displayName;
+
+    Priority(String displayName) {
+        this.displayName = displayName;
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\enums\Status.java:
+<code>
+package com.taskflow.enums;
+
+import lombok.Getter;
+
+@Getter
+public enum Status {
+    TODO("To Do"),
+    IN_PROGRESS("In Progress"),
+    DONE("Done");
+
+    private final String displayName;
+
+    Status(String displayName) {
+        this.displayName = displayName;
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\exception\GlobalExceptionHandler.java:
+<code>
+package com.taskflow.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+@ControllerAdvice
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Object> handleResourceNotFoundException(
+            ResourceNotFoundException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<Object> handleUserAlreadyExistsException(
+            UserAlreadyExistsException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Object> handleUnauthorizedException(
+            UnauthorizedException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
+    }
+
+    // Catch-all for any other unhandled exceptions
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleAllUncaughtException(
+            Exception ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", "An unexpected error occurred: " + ex.getMessage());
+        // Log the full stack trace for debugging purposes
+        ex.printStackTrace(); // This will print to the server console
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\exception\ResourceNotFoundException.java:
+<code>
+package com.taskflow.exception;
+
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+
+</code>
+
+taskflow\src\main\java\com\taskflow\exception\UnauthorizedException.java:
+<code>
+package com.taskflow.exception;
+
+public class UnauthorizedException extends RuntimeException {
+    public UnauthorizedException(String message) {
+        super(message);
+    }
+}
+
+</code>
+
+taskflow\src\main\java\com\taskflow\exception\UserAlreadyExistsException.java:
+<code>
+package com.taskflow.exception;
+
+public class UserAlreadyExistsException extends RuntimeException {
+    public UserAlreadyExistsException(String message) {
+        super(message);
+    }
+}
+
+</code>
+
+taskflow\src\main\java\com\taskflow\repository\TaskRepository.java:
+<code>
+package com.taskflow.repository;
+
+import com.taskflow.entity.Task;
+import com.taskflow.enums.Category;
+import com.taskflow.enums.Priority;
+import com.taskflow.enums.Status;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface TaskRepository extends JpaRepository<Task, Long> {
+
+    List<Task> findByUserId(Long userId);
+
+    @Query("SELECT t FROM Task t WHERE t.user.id = :userId " +
+           "AND (:status IS NULL OR t.status = :status) " +
+           "AND (:category IS NULL OR t.category = :category) " +
+           "AND (:priority IS NULL OR t.priority = :priority)")
+    List<Task> findByUserIdWithFilters(@Param("userId") Long userId, @Param("status") Status status, 
+                                       @Param("category") Category category, @Param("priority") Priority priority);
+
+    Optional<Task> findByIdAndUserId(Long id, Long userId);
+
+    long countByUserId(Long userId);
+
+    long countByUserIdAndStatus(Long userId, Status status);
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\repository\UserRepository.java:
+<code>
+package com.taskflow.repository;
+
+import com.taskflow.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    Optional<User> findByEmail(String email);
+
+    boolean existsByEmail(String email);
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\security\CustomUserDetailsService.java:
+<code>
+package com.taskflow.security;
+
+import com.taskflow.entity.User;
+import com.taskflow.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class CustomUserDetailsService implements UserDetailsService {
+
+    private final UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        return UserPrincipal.create(user);
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\security\JwtAuthFilter.java:
+<code>
+package com.taskflow.security;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * Spring Security filter chain – validates JWT from Authorization header.
+ * Matches the sequence diagram: [JWT valide — Spring Security filter chain]
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private final JwtUtils jwtUtils;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        String token = parseJwt(request);
+
+        if (token != null && jwtUtils.validateJWT(token)) {
+            Long userId = jwtUtils.getUserIdFromJWT(token);
+
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(userId, null, List.of());
+            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+            log.debug("Authenticated userId={} for URI={}", userId, request.getRequestURI());
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    private String parseJwt(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\security\JwtUtils.java:
+<code>
+package com.taskflow.security;
+
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+
+@Slf4j
+@Component
+public class JwtUtils {
+
+    @Value("${app.jwt.secret}")
+    private String jwtSecret;
+
+    @Value("${app.jwt.expiration}")
+    private long jwtExpirationMs;
+
+    private SecretKey key() {
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(
+            java.util.Base64.getEncoder().encodeToString(jwtSecret.getBytes())));
+    }
+
+    public String generateJWT(Long userId) {
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .signWith(key())
+                .compact();
+    }
+
+    public Long getUserIdFromJWT(String token) {
+        return Long.parseLong(
+            Jwts.parser()
+                .verifyWith(key())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject()
+        );
+    }
+
+    public boolean validateJWT(String token) {
+        try {
+            Jwts.parser().verifyWith(key()).build().parseSignedClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Invalid JWT: {}", e.getMessage());
+            return false;
+        }
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\security\UserPrincipal.java:
+<code>
+package com.taskflow.security;
+
+import com.taskflow.entity.User;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.Collections;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+@Getter
+@AllArgsConstructor
+public class UserPrincipal implements UserDetails {
+
+    private Long id;
+    private String email;
+    private String password;
+
+    public static UserPrincipal create(User user) {
+        return new UserPrincipal(
+            user.getId(),
+            user.getEmail(),
+            user.getPassword()
+        );
+    }
+
+    public static UserPrincipal create(Long id, String email) {
+        return new UserPrincipal(
+            id,
+            email,
+            null // Password not needed for JWT-authenticated requests
+        );
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() { return true; }
+
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    public boolean isEnabled() { return true; }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\service\AIService.java:
+<code>
+package com.taskflow.service;
+import com.taskflow.enums.Status;
+import com.google.genai.Client;
+import com.google.genai.types.GenerateContentResponse;
+import com.taskflow.dto.AITipContext;
+import com.taskflow.dto.TaskDto.StatsResponse;
+import com.taskflow.dto.TaskResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+public class AIService {
+
+    @Value("${gemini.api.key}")
+    private String apiKey;
+
+    private static final String MODEL_NAME = "gemini-2.5-flash-lite";
+
+    private static final String SYSTEM_PROMPT = "You are a helpful productivity assistant embedded in TaskFlow, a task management app. " +
+            "You have access to the user's tasks and can help them manage their workload. " +
+            "Help users manage their tasks better, prioritize work, overcome procrastination, and stay productive. " +
+            "Keep answers concise and practical (2–4 sentences unless a longer answer is clearly needed). " +
+            "You may ask clarifying questions. Be warm but efficient.";
+
+    // New method that includes task context
+   public String chatWithContext(String message, List<Map<String, String>> history, 
+                            List<TaskResponse> userTasks, Long userId) {
+    try {
+        Client client = Client.builder().apiKey(apiKey).build();
+        
+        // Build the conversation
+        StringBuilder prompt = new StringBuilder();
+        prompt.append(SYSTEM_PROMPT).append("\n\n");
+        
+        // Add task context
+        if (userTasks != null && !userTasks.isEmpty()) {
+            prompt.append("User's current tasks:\n");
+            for (TaskResponse task : userTasks.stream()
+                    .filter(t -> t.getStatus() != Status.DONE)
+                    .limit(5)
+                    .collect(Collectors.toList())) {
+                prompt.append(String.format("- %s (%s priority, %s)\n",
+                    task.getTitle(),
+                    task.getPriority(),
+                    task.getStatus()
+                ));
+            }
+            prompt.append("\n");
+        }
+        
+        // Add conversation history
+        if (history != null && !history.isEmpty()) {
+            for (Map<String, String> msg : history) {
+                String role = msg.get("role");
+                String content = msg.get("content");
+                if ("user".equals(role)) {
+                    prompt.append("User: ").append(content).append("\n");
+                } else if ("assistant".equals(role)) {
+                    prompt.append("Assistant: ").append(content).append("\n");
+                }
+            }
+        }
+        
+        prompt.append("User: ").append(message).append("\n");
+        prompt.append("Assistant:");
+        
+        // Log the prompt for debugging
+        log.debug("Sending prompt to Gemini: {}", prompt.toString());
+        
+        GenerateContentResponse response = client.models.generateContent(
+            MODEL_NAME,
+            prompt.toString(),
+            null
+        );
+        
+        String responseText = response.text();
+        log.debug("Received response from Gemini: {}", responseText);
+        
+        return responseText != null && !responseText.isEmpty() ? 
+               responseText : "I'm not sure how to respond to that.";
+        
+    } catch (Exception e) {
+        log.error("Gemini API error: ", e);
+        // Return a more helpful error message
+        return "I'm having trouble connecting right now. Please check if the Gemini API is properly configured. Error: " + e.getMessage();
+    }
+}
+    // Keep original method for compatibility
+    public String chat(String message, List<Map<String, String>> history) {
+        return chatWithContext(message, history, null, null);
+    }
+
+    public String generateProductivityTip(AITipContext context) {
+        try {
+            Client client = Client.builder().apiKey(apiKey).build();
+            
+            StringBuilder prompt = new StringBuilder();
+            prompt.append("You are a concise productivity coach. ");
+            prompt.append("Give ONE short, specific, actionable productivity tip (max 2 sentences). ");
+            prompt.append("No preamble, no bullet points. Just the tip itself.\n\n");
+            
+            if (context != null && context.getStats() != null) {
+                StatsResponse stats = context.getStats();
+                prompt.append(String.format(
+                    "User stats: %d total tasks (%d todo, %d in progress, %d done, %.0f%% complete). ",
+                    stats.getTotal(), stats.getTodo(), stats.getInProgress(), 
+                    stats.getDone(), stats.getCompletionRate()
+                ));
+            }
+            
+            GenerateContentResponse response = client.models.generateContent(
+                MODEL_NAME,
+                prompt.toString(),
+                null
+            );
+            
+            String tip = response.text();
+            return tip != null && !tip.isEmpty() ? tip : "Try breaking down your largest task into smaller steps!";
+            
+        } catch (Exception e) {
+            log.error("Gemini tip generation error: ", e);
+            return "Try breaking down your largest task into smaller steps!";
+        }
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\service\AuthService.java:
+<code>
+package com.taskflow.service;
+
+import com.taskflow.dto.AuthDto;
+import com.taskflow.entity.User;
+import com.taskflow.repository.UserRepository;
+import com.taskflow.security.JwtUtils;
+import com.taskflow.exception.UserAlreadyExistsException;
+import com.taskflow.exception.UnauthorizedException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Implements Scénario A – Authentification from the sequence diagram:
+ *   authenticate(dto) → findByUsername() → verify hash → generateJWT(userId)
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtils jwtUtils;
+
+    /**
+     * POST /api/auth/register
+     * User.register(email, password, mainGoal)
+     */
+    @Transactional
+    public AuthDto.AuthResponse register(AuthDto.RegisterRequest request) {
+        if (!isEmailUnique(request.getEmail())) {
+            throw new UserAlreadyExistsException(
+                "Email already registered: " + request.getEmail());
+        }
+
+        User user = User.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .mainGoal(request.getMainGoal())
+                .workRhythm(request.getWorkRhythm())
+                .iaEnabled(true)
+                .build();
+
+        user = userRepository.save(user);
+        log.info("New user registered: {}", user.getEmail());
+
+        String token = jwtUtils.generateJWT(user.getId());
+        return toAuthResponse(token, user);
+    }
+
+    /**
+     * POST /api/auth/login
+     * authenticate(dto) from sequence diagram
+     */
+    @Transactional(readOnly = true)
+    public AuthDto.AuthResponse login(AuthDto.LoginRequest request) {
+        // findByUsername() → Optional<User>
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+
+        // vérifier hash du mot de passe
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new UnauthorizedException("Invalid credentials");
+        }
+
+        // generateJWT(userId) → 200 OK (token, user)
+        String token = jwtUtils.generateJWT(user.getId());
+        log.info("User logged in: {}", user.getEmail());
+        return toAuthResponse(token, user);
+    }
+
+    public boolean isEmailUnique(String email) {
+        return !userRepository.existsByEmail(email);
+    }
+
+    private AuthDto.AuthResponse toAuthResponse(String token, User user) {
+        return new AuthDto.AuthResponse(
+                token,
+                user.getId(),
+                user.getEmail(),
+                user.getMainGoal(),
+                user.getWorkRhythm(),
+                user.isIaEnabled()
+        );
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\service\TaskService.java:
+<code>
+package com.taskflow.service;
+
+import com.taskflow.dto.TaskFilterRequest;
+import com.taskflow.dto.TaskDto;
+import com.taskflow.dto.TaskRequest;
+import com.taskflow.dto.TaskResponse;
+import com.taskflow.entity.Task;
+import com.taskflow.entity.User;
+import com.taskflow.enums.Status;
+import com.taskflow.exception.ResourceNotFoundException;
+import com.taskflow.repository.TaskRepository;
+import com.taskflow.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class TaskService {
+
+    private final TaskRepository taskRepository;
+    private final UserRepository userRepository; // Assuming you have a UserRepository
+
+    @Transactional
+    public TaskResponse createTask(Long userId, TaskRequest taskRequest) {
+        log.debug("Creating task for user ID: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+        Task task = Task.builder()
+                .title(taskRequest.getTitle())
+                .description(taskRequest.getDescription())
+                .priority(taskRequest.getPriority())
+                .status(taskRequest.getStatus() != null ? taskRequest.getStatus() : Status.TODO)
+                .category(taskRequest.getCategory())
+                .user(user)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        task = taskRepository.save(task);
+        log.debug("Task created with ID: {}", task.getId());
+        return mapToTaskResponse(task);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TaskResponse> getAllTasksForUser(Long userId) {
+        log.debug("Fetching all tasks for user ID: {}", userId);
+        return taskRepository.findByUserId(userId)
+                .stream()
+                .map(this::mapToTaskResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<TaskResponse> getFilteredTasksForUser(Long userId, TaskFilterRequest filterRequest) {
+        log.debug("Fetching filtered tasks for user ID: {} with filters: {}", userId, filterRequest);
+        return taskRepository.findByUserIdWithFilters(
+                        userId,
+                        filterRequest.getStatus(),
+                        filterRequest.getCategory(),
+                        filterRequest.getPriority())
+                .stream()
+                .map(this::mapToTaskResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public TaskResponse getTaskByIdForUser(Long taskId, Long userId) {
+        log.debug("Fetching task by ID: {} for user ID: {}", taskId, userId);
+        Task task = taskRepository.findByIdAndUserId(taskId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with ID: " + taskId + " for user: " + userId));
+        return mapToTaskResponse(task);
+    }
+
+    @Transactional
+    public TaskResponse updateTask(Long taskId, Long userId, TaskRequest taskRequest) {
+        log.debug("Updating task ID: {} for user ID: {}", taskId, userId);
+        Task task = taskRepository.findByIdAndUserId(taskId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with ID: " + taskId + " for user: " + userId));
+
+        task.setTitle(taskRequest.getTitle());
+        task.setDescription(taskRequest.getDescription());
+        task.setPriority(taskRequest.getPriority());
+        task.setStatus(taskRequest.getStatus() != null ? taskRequest.getStatus() : task.getStatus());
+        task.setCategory(taskRequest.getCategory());
+        task.setUpdatedAt(LocalDateTime.now());
+
+        task = taskRepository.save(task);
+        log.debug("Task ID: {} updated successfully.", task.getId());
+        return mapToTaskResponse(task);
+    }
+
+    @Transactional
+    public void deleteTask(Long taskId, Long userId) {
+        log.debug("Deleting task ID: {} for user ID: {}", taskId, userId);
+        Task task = taskRepository.findByIdAndUserId(taskId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with ID: " + taskId + " for user: " + userId));
+        taskRepository.delete(task);
+    }
+
+    @Transactional
+    public TaskResponse markTaskAsDone(Long taskId, Long userId) {
+        log.debug("Marking task ID: {} as DONE for user ID: {}", taskId, userId);
+        Task task = taskRepository.findByIdAndUserId(taskId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with ID: " + taskId + " for user: " + userId));
+        task.markAsCompleted(); // Uses the helper method in Task entity
+        task.setUpdatedAt(LocalDateTime.now());
+        task = taskRepository.save(task);
+        log.debug("Task ID: {} marked as DONE.", task.getId());
+        return mapToTaskResponse(task);
+    }
+
+    @Transactional
+    public TaskResponse markTaskAsInProgress(Long taskId, Long userId) {
+        log.debug("Marking task ID: {} as IN_PROGRESS for user ID: {}", taskId, userId);
+        Task task = taskRepository.findByIdAndUserId(taskId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with ID: " + taskId + " for user: " + userId));
+        task.markAsInProgress(); // Uses the helper method in Task entity
+        task.setUpdatedAt(LocalDateTime.now());
+        task = taskRepository.save(task);
+        log.debug("Task ID: {} marked as IN_PROGRESS.", task.getId());
+        return mapToTaskResponse(task);
+    }
+
+    @Transactional(readOnly = true)
+    public long countTasksForUser(Long userId) {
+        log.debug("Counting total tasks for user ID: {}", userId);
+        return taskRepository.countByUserId(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public long countTasksByStatusForUser(Long userId, Status status) {
+        log.debug("Counting tasks by status: {} for user ID: {}", status, userId);
+        return taskRepository.countByUserIdAndStatus(userId, status);
+    }
+
+    @Transactional(readOnly = true)
+    public TaskDto.StatsResponse getTaskStatsForUser(Long userId) {
+        log.debug("Fetching task statistics for user ID: {}", userId);
+        long totalTasks = countTasksForUser(userId);
+        long todoTasks = countTasksByStatusForUser(userId, Status.TODO);
+        long inProgressTasks = countTasksByStatusForUser(userId, Status.IN_PROGRESS);
+        long doneTasks = countTasksByStatusForUser(userId, Status.DONE);
+
+        double completionRate = (totalTasks > 0) ? ((double) doneTasks / totalTasks) * 100 : 0.0;
+
+        return new TaskDto.StatsResponse(
+                totalTasks,
+                todoTasks,
+                inProgressTasks,
+                doneTasks,
+                completionRate
+        );
+    }
+
+    private TaskResponse mapToTaskResponse(Task task) {
+        TaskResponse response = new TaskResponse();
+        response.setId(task.getId());
+        response.setTitle(task.getTitle());
+        response.setDescription(task.getDescription());
+        response.setPriority(task.getPriority());
+        response.setStatus(task.getStatus());
+        response.setCategory(task.getCategory());
+        response.setCreatedAt(task.getCreatedAt());
+        response.setUpdatedAt(task.getUpdatedAt());
+        response.setUserId(task.getUser().getId());
+        return response;
+    }
+}
+</code>
+
+taskflow\src\main\java\com\taskflow\service\UserService.java:
+<code>
+package com.taskflow.service;
+
+import com.taskflow.dto.UserDto;
+import com.taskflow.entity.User;
+import com.taskflow.exception.ResourceNotFoundException;
+import com.taskflow.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+    private final UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public UserDto.ProfileResponse getProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        return toResponse(user);
+    }
+
+    @Transactional
+    public UserDto.ProfileResponse updateProfile(Long userId, UserDto.UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+        if (request.getMainGoal() != null)  user.setMainGoal(request.getMainGoal());
+        if (request.getWorkRhythm() != null) user.setWorkRhythm(request.getWorkRhythm());
+        if (request.getIaEnabled() != null)  user.setIaEnabled(request.getIaEnabled());
+
+        return toResponse(userRepository.save(user));
+    }
+
+    private UserDto.ProfileResponse toResponse(User u) {
+        UserDto.ProfileResponse dto = new UserDto.ProfileResponse();
+        dto.setId(u.getId());
+        dto.setEmail(u.getEmail());
+        dto.setMainGoal(u.getMainGoal());
+        dto.setWorkRhythm(u.getWorkRhythm());
+        dto.setIaEnabled(u.isIaEnabled());
+        return dto;
+    }
+}
+</code>
+
+taskflow\src\main\resources\application.yaml:
+<code>
+server:
+  port: 8080
+
+spring:
+  application:
+    name: taskflow-api
+
+  # ── PostgreSQL ─────────────────────────────────────────
+  datasource:
+    url: jdbc:postgresql://localhost:5432/taskflow
+    username: postgres
+    password: postgres
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+    show-sql: true
+
+
+# ── JWT ────────────────────────────────────────────────────
+app:
+  jwt:
+    secret: taskflow-super-secret-key-at-least-256-bits-long-for-hs256-algorithm
+    expiration: 86400000   # 24 h in ms
+
+# ── OpenAPI ────────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+logging:
+  level:
+    com.taskflow: DEBUG
+    org.springframework.security: INFO
+
+# Add at the bottom
+gemini:
+  api:
+    key: AIzaSyAc_j3dYsJi-IYFZUUnmSqzCAk-j6Hy1BQ
+</code>
+
+taskflow\src\test\java\com\taskflow\TaskflowApplicationTests.java:
+<code>
+package com.taskflow;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+@SpringBootTest
+@ActiveProfiles("test")
+class TaskflowApplicationTests {
+
+    @Test
+    void contextLoads() {
+    }
+}
+
+</code>
+
+taskflow\src\test\resources\application-test.yaml:
+<code>
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  jwt:
+    secret: test-secret-key-at-least-256-bits-long-for-hs256-algorithm-testing
+    expiration: 3600000
+
+</code>
+
