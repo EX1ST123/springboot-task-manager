@@ -5,11 +5,11 @@ spring:
   application:
     name: taskflow-api
 
-  # ── PostgreSQL ─────────────────────────────────────────
   datasource:
-    url: jdbc:postgresql://localhost:5432/taskflow
-    username: postgres
-    password: postgres
+    url: jdbc:mysql://localhost:3306/taskflow?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       connection-timeout: 20000
       maximum-pool-size: 5
@@ -19,19 +19,16 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
     open-in-view: false
     show-sql: true
 
-
-# ── JWT ────────────────────────────────────────────────────
 app:
   jwt:
     secret: taskflow-super-secret-key-at-least-256-bits-long-for-hs256-algorithm
-    expiration: 86400000   # 24 h in ms
+    expiration: 86400000
 
-# ── OpenAPI ────────────────────────────────────────────────
 springdoc:
   api-docs:
     path: /api-docs
@@ -44,7 +41,6 @@ logging:
     com.taskflow: DEBUG
     org.springframework.security: INFO
 
-# Add at the bottom
 gemini:
   api:
     key: AIzaSyAc_j3dYsJi-IYFZUUnmSqzCAk-j6Hy1BQ
